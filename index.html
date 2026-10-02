@@ -300,7 +300,7 @@
         </div>
         <div class="field-wrap">
           <label for="appliance">Appliance *</label>
-          <input type="text" id="appliance" name="appliance" placeholder="e.g. 1 x Pump Ladder" required>
+          <input type="text" id="appliance" name="appliance" placeholder="PL232" required>
         </div>
         <div class="field-wrap full">
           <label for="address">Address *</label>
@@ -600,19 +600,45 @@ async function cropFileForPhotoBox(file) {
   }
 }
 
+function updateDropBoxPreview(key, objectUrl) {
+  const drop = document.querySelector('.photo-drop[data-key="' + key + '"]');
+  if (!drop) return;
+  let img = drop.querySelector('img.drop-preview');
+  const placeholder = drop.querySelector('.placeholder-text');
+  if (objectUrl) {
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'drop-preview';
+      drop.insertBefore(img, drop.firstChild);
+    }
+    img.src = objectUrl;
+    if (placeholder) placeholder.style.display = 'none';
+  } else {
+    if (img) img.remove();
+    if (placeholder) placeholder.style.display = '';
+  }
+}
+
 for (const field of PHOTO_FIELDS) {
   const input = document.getElementById(field.key);
   input.addEventListener('change', () => {
     const file = input.files && input.files[0];
+    const prevState = photoState[field.key];
+    if (prevState && prevState.previewUrl) {
+      URL.revokeObjectURL(prevState.previewUrl);
+    }
     if (!file) {
       updatePhotoMock(field.key, null);
+      updateDropBoxPreview(field.key, null);
       delete photoState[field.key];
       return;
     }
     const previewUrl = URL.createObjectURL(file);
     updatePhotoMock(field.key, previewUrl);
+    updateDropBoxPreview(field.key, previewUrl);
     photoState[field.key] = {
       croppedBytesPromise: cropFileForPhotoBox(file),
+      previewUrl,
     };
   });
 }
