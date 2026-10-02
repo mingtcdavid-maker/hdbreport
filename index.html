@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCDF HDB Fire Risk Report Generator</title>
+<style>
+  :root {
+    --brand: #44546A;
+    --brand-dark: #2e3c4e;
+    --ink: #1c1c1c;
+    --muted: #6b6b6b;
+    --border: #d9d9d9;
+    --bg: #f5f5f3;
+    --card: #ffffff;
+    --box-fill: #E7E6E6;
+    --box-border: #44546A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding-bottom: 60px;
+  }
+  header {
+    background: var(--brand);
+    color: #fff;
+    padding: 28px 20px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 1.5rem;
+  }
+  header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+  }
+  main {
+    max-width: 1080px;
+    margin: 24px auto;
+    padding: 0 16px;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  fieldset {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  legend {
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 0 8px;
+    color: var(--brand-dark);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .full { grid-column: 1 / -1; }
+  label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .optional-tag {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea {
+    min-height: 70px;
+    resize: vertical;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(68, 84, 106, 0.15);
+  }
+  .field-wrap { margin-bottom: 0; }
+  .field-note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .photo-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .photo-drop {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    background: #fafafa;
+    aspect-ratio: 1704 / 1332;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .photo-drop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  .photo-drop .placeholder-text {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px;
+  }
+  .photo-drop input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  button#submitBtn {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-size: 1.02rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button#submitBtn:hover { background: var(--brand-dark); }
+  button#submitBtn:disabled {
+    background: #9aa4b0;
+    cursor: not-allowed;
+  }
+  #status {
+    margin-top: 14px;
+    font-size: 0.9rem;
+    min-height: 20px;
+  }
+  #status.error { color: #b3261e; }
+  #status.success { color: #1e7a34; }
+
+  .preview-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 24px;
+  }
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .preview-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--brand-dark);
+  }
+  #previewStatus {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .slide-mock {
+    background: #fdfdfc;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    aspect-ratio: 10 / 5.625;
+    position: relative;
+    padding: 24px 32px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+  .slide-mock .slide-title {
+    font-weight: 700;
+    font-size: 1.3rem;
+    text-align: center;
+    margin: 0 0 18px;
+    color: #111;
+    word-break: break-word;
+  }
+  .slide-mock .restricted-mark {
+    position: absolute;
+    left: 24px;
+    bottom: 10px;
+    color: #d60000;
+    font-weight: 700;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+  }
+  .info-table {
+    display: grid;
+    grid-template-columns: minmax(140px, 32%) 1fr;
+    border: 1px solid #000;
+    font-size: 0.78rem;
+    width: 66%;
+  }
+  .info-table .cell {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    overflow-wrap: anywhere;
+  }
+  .info-table .cell.label {
+    font-weight: 600;
+    background: #f4f4f4;
+  }
+  .photo-row-mock {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .photo-box-mock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .photo-box-mock .box {
+    width: 100%;
+    aspect-ratio: 1704 / 1332;
+    background: var(--box-fill);
+    border: 1px solid var(--box-border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .photo-box-mock .box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .photo-box-mock .box .empty-text {
+    font-size: 0.65rem;
+    color: #888;
+    text-align: center;
+  }
+  .photo-box-mock .cap {
+    font-size: 0.78rem;
+    text-align: center;
+  }
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+    .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Singapore Civil Defence Force</h1>
+  <p>HDB Fire Risk Report — Generator</p>
+</header>
+
+<main>
+  <form id="reportForm" novalidate>
+
+    <fieldset>
+      <legend>Incident Information</legend>
+      <div class="grid">
+        <div class="field-wrap">
+          <label for="block_number">HDB Block *</label>
+          <input type="text" id="block_number" name="block_number" placeholder="e.g. Blk 123" required>
+        </div>
+        <div class="field-wrap">
+          <label for="appliance">Appliance *</label>
+          <input type="text" id="appliance" name="appliance" placeholder="e.g. 1 x Pump Ladder" required>
+        </div>
+        <div class="field-wrap full">
+          <label for="address">Address *</label>
+          <textarea id="address" name="address" required></textarea>
+        </div>
+        <div class="field-wrap">
+          <label for="date">Date *</label>
+          <input type="date" id="date" name="date" required>
+        </div>
+        <div class="field-wrap">
+          <label for="time">Time *</label>
+          <input type="time" id="time" name="time" required>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Inspecting Officers</legend>
+      <div class="grid">
+        <div class="field-wrap">
+          <label for="first_inspecting_officer">Rank / Name of Inspecting Officer *</label>
+          <input type="text" id="first_inspecting_officer" name="first_inspecting_officer" required>
+        </div>
+        <div class="field-wrap">
+          <label for="second_inspecting_officer">Rank / Name of Inspecting Officer <span class="optional-tag">(optional)</span></label>
+          <input type="text" id="second_inspecting_officer" name="second_inspecting_officer">
+        </div>
+      </div>
+      <p class="field-note">Leave the second officer blank if only one officer conducted the inspection — the report will show "NIL".</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Photos <span class="optional-tag">(all 4 required — each is auto-cropped to fit its box)</span></legend>
+      <div class="photo-grid">
+        <div class="photo-field">
+          <label for="photo_overview">Overview</label>
+          <div class="photo-drop" data-key="photo_overview">
+            <span class="placeholder-text">Click or drop image</span>
+            <input type="file" id="photo_overview" name="photo_overview" accept="image/*" required>
+          </div>
+        </div>
+        <div class="photo-field">
+          <label for="photo_best_appliance_placement">Best appliance placement</label>
+          <div class="photo-drop" data-key="photo_best_appliance_placement">
+            <span class="placeholder-text">Click or drop image</span>
+            <input type="file" id="photo_best_appliance_placement" name="photo_best_appliance_placement" accept="image/*" required>
+          </div>
+        </div>
+        <div class="photo-field">
+          <label for="photo_nearest_riser">Nearest riser location</label>
+          <div class="photo-drop" data-key="photo_nearest_riser">
+            <span class="placeholder-text">Click or drop image</span>
+            <input type="file" id="photo_nearest_riser" name="photo_nearest_riser" accept="image/*" required>
+          </div>
+        </div>
+        <div class="photo-field">
+          <label for="photo_nearest_hydrant">Nearest hydrant</label>
+          <div class="photo-drop" data-key="photo_nearest_hydrant">
+            <span class="placeholder-text">Click or drop image</span>
+            <input type="file" id="photo_nearest_hydrant" name="photo_nearest_hydrant" accept="image/*" required>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <div>
+      <button type="submit" id="submitBtn">Generate &amp; Download Report</button>
+      <div id="status"></div>
+    </div>
+
+  </form>
+
+  <div class="preview-card">
+    <div class="preview-header">
+      <h2>Live Preview</h2>
+      <span id="previewStatus">Up to date</span>
+    </div>
+
+    <div class="slide-mock" id="slideOneMock">
+      <p class="slide-title">Information</p>
+      <div class="info-table" id="infoTableMock"></div>
+      <span class="restricted-mark">RESTRICTED</span>
+    </div>
+
+    <div class="slide-mock" id="slideTwoMock">
+      <p class="slide-title" id="blockTitleMock">&nbsp;</p>
+      <div class="photo-row-mock" id="photoRowMock"></div>
+      <span class="restricted-mark">RESTRICTED</span>
+    </div>
+  </div>
+</main>
+
+<script src="static/vendor/pizzip.min.js"></script>
+<script src="static/vendor/docxtemplater.min.js"></script>
+<script src="static/vendor/imagemodule.js"></script>
+<script>
+const TEMPLATE_URL = 'pptx_template/SCDF_HDB_Report_TEMPLATE.pptx';
+
+// Grey photo box size in the pptx template, in EMUs (English Metric Units).
+const PHOTO_BOX_EMU = { cx: 1704000, cy: 1332000 };
+const EMU_PER_PIXEL = 9525; // standard OOXML conversion at 96 DPI
+const PHOTO_BOX_PIXELS = [
+  Math.round(PHOTO_BOX_EMU.cx / EMU_PER_PIXEL),
+  Math.round(PHOTO_BOX_EMU.cy / EMU_PER_PIXEL),
+];
+const PHOTO_ASPECT = PHOTO_BOX_EMU.cx / PHOTO_BOX_EMU.cy;
+// Higher-resolution raster target for the actual embedded/cropped photo
+// (the box placement above stays fixed; this only affects image sharpness).
+const PHOTO_CANVAS_W = 900;
+const PHOTO_CANVAS_H = Math.round(PHOTO_CANVAS_W / PHOTO_ASPECT);
+
+const PHOTO_FIELDS = [
+  { key: 'photo_overview', label: 'Overview' },
+  { key: 'photo_best_appliance_placement', label: 'Best appliance placement' },
+  { key: 'photo_nearest_riser', label: 'Nearest riser location' },
+  { key: 'photo_nearest_hydrant', label: 'Nearest hydrant' },
+];
+
+const INFO_ROWS = [
+  ['Appliance', 'appliance'],
+  ['Rank / Name of Inspecting Officer', 'first_inspecting_officer'],
+  ['Rank / Name of Inspecting Officer', 'second_inspecting_officer'],
+  ['Date', 'date'],
+  ['Time', 'time'],
+  ['HDB Block', 'block_number'],
+  ['Address', 'address'],
+];
+
+const form = document.getElementById('reportForm');
+const statusEl = document.getElementById('status');
+const submitBtn = document.getElementById('submitBtn');
+const previewStatusEl = document.getElementById('previewStatus');
+const infoTableMock = document.getElementById('infoTableMock');
+const blockTitleMock = document.getElementById('blockTitleMock');
+const photoRowMock = document.getElementById('photoRowMock');
+
+function clean(value) {
+  return (value || '').toString().trim();
+}
+
+function formatDate(value) {
+  if (!value) return '';
+  const parts = value.split('-').map(Number);
+  const y = parts[0], m = parts[1], d = parts[2];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
+}
+
+function formatTime(value) {
+  if (!value) return '';
+  const [h, m] = value.split(':');
+  return `${h}${m}H`;
+}
+
+function buildTextContext(formEl) {
+  const data = new FormData(formEl);
+  const get = (name) => clean(data.get(name));
+  return {
+    appliance: get('appliance'),
+    first_inspecting_officer: get('first_inspecting_officer'),
+    second_inspecting_officer: get('second_inspecting_officer') || 'NIL',
+    date: formatDate(get('date')),
+    time: formatTime(get('time')),
+    block_number: get('block_number'),
+    address: get('address'),
+  };
+}
+
+function safeFilename(blockNumber) {
+  let name = (blockNumber || '').trim().replace(/[^A-Za-z0-9_-]+/g, '_');
+  if (!name) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    name = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_` +
+      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  }
+  return `HDB_Fire_Risk_Report_${name}.pptx`;
+}
+
+// --- Live preview (a hand-built facsimile of the two pptx slides; the
+// actual generated .pptx is produced separately via docxtemplater). ---
+
+function updatePreviewText() {
+  const ctx = buildTextContext(form);
+  infoTableMock.innerHTML = '';
+  for (const [label, key] of INFO_ROWS) {
+    const labelCell = document.createElement('div');
+    labelCell.className = 'cell label';
+    labelCell.textContent = label;
+    const valueCell = document.createElement('div');
+    valueCell.className = 'cell';
+    valueCell.textContent = ctx[key] || '';
+    infoTableMock.appendChild(labelCell);
+    infoTableMock.appendChild(valueCell);
+  }
+  blockTitleMock.textContent = ctx.block_number || ' ';
+}
+
+function initPhotoRowMock() {
+  photoRowMock.innerHTML = '';
+  for (const field of PHOTO_FIELDS) {
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-box-mock';
+    const box = document.createElement('div');
+    box.className = 'box';
+    box.id = 'mockbox_' + field.key;
+    const empty = document.createElement('span');
+    empty.className = 'empty-text';
+    empty.textContent = 'No image';
+    box.appendChild(empty);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = field.label;
+    wrap.appendChild(box);
+    wrap.appendChild(cap);
+    photoRowMock.appendChild(wrap);
+  }
+}
+
+function updatePhotoMock(key, objectUrl) {
+  const box = document.getElementById('mockbox_' + key);
+  if (!box) return;
+  box.innerHTML = '';
+  if (objectUrl) {
+    const img = document.createElement('img');
+    img.src = objectUrl;
+    box.appendChild(img);
+  } else {
+    const empty = document.createElement('span');
+    empty.className = 'empty-text';
+    empty.textContent = 'No image';
+    box.appendChild(empty);
+  }
+}
+
+initPhotoRowMock();
+updatePreviewText();
+form.addEventListener('input', updatePreviewText);
+
+// --- Photo upload handling: show a preview, and cache cropped bytes ready
+// for embedding into the generated .pptx. ---
+
+const photoState = {}; // key -> { croppedBytesPromise }
+
+function loadImageElement(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not read that image file.'));
+    img.src = url;
+  });
+}
+
+function cropToCover(img, targetW, targetH) {
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext('2d');
+  const srcAspect = img.naturalWidth / img.naturalHeight;
+  const dstAspect = targetW / targetH;
+  let sx, sy, sw, sh;
+  if (srcAspect > dstAspect) {
+    sh = img.naturalHeight;
+    sw = sh * dstAspect;
+    sy = 0;
+    sx = (img.naturalWidth - sw) / 2;
+  } else {
+    sw = img.naturalWidth;
+    sh = sw / dstAspect;
+    sx = 0;
+    sy = (img.naturalHeight - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+  return canvas;
+}
+
+function canvasToUint8Array(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Could not encode cropped image.'));
+        return;
+      }
+      blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf))).catch(reject);
+    }, 'image/jpeg', quality);
+  });
+}
+
+async function cropFileForPhotoBox(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImageElement(url);
+    const canvas = cropToCover(img, PHOTO_CANVAS_W, PHOTO_CANVAS_H);
+    return await canvasToUint8Array(canvas, 0.9);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+for (const field of PHOTO_FIELDS) {
+  const input = document.getElementById(field.key);
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (!file) {
+      updatePhotoMock(field.key, null);
+      delete photoState[field.key];
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    updatePhotoMock(field.key, previewUrl);
+    photoState[field.key] = {
+      croppedBytesPromise: cropFileForPhotoBox(file),
+    };
+  });
+}
+
+// --- Report generation ---
+
+let cachedTemplateBuffer = null;
+
+async function getTemplateBuffer() {
+  if (!cachedTemplateBuffer) {
+    const response = await fetch(TEMPLATE_URL);
+    if (!response.ok) {
+      throw new Error('Report template not found.');
+    }
+    cachedTemplateBuffer = await response.arrayBuffer();
+  }
+  // Hand out a copy each time: PizZip/docxtemplater treat the buffer as
+  // consumable, so reusing the same ArrayBuffer across renders corrupts it.
+  return cachedTemplateBuffer.slice(0);
+}
+
+async function renderPptxBlob(textContext, photoBytesMap) {
+  const templateBuffer = await getTemplateBuffer();
+  const zip = new PizZip(templateBuffer);
+
+  const imageModule = new window.ImageModule({
+    centered: false,
+    fileType: 'pptx',
+    getImage: (tagValue, tagName) => photoBytesMap[tagName],
+    getSize: () => PHOTO_BOX_PIXELS,
+  });
+
+  const doc = new window.docxtemplater(zip, {
+    modules: [imageModule],
+    delimiters: { start: '{{', end: '}}' },
+    paragraphLoop: true,
+    linebreaks: true,
+  });
+
+  const renderData = Object.assign({}, textContext);
+  for (const field of PHOTO_FIELDS) {
+    // The image module only needs a truthy sentinel here; the real bytes
+    // are looked up from photoBytesMap inside getImage() above.
+    renderData[field.key] = photoBytesMap[field.key] ? '1' : '';
+  }
+
+  doc.render(renderData);
+
+  return doc.getZip().generate({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  });
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  statusEl.textContent = '';
+  statusEl.className = '';
+
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Generating report…';
+
+  try {
+    const textContext = buildTextContext(form);
+
+    const photoBytesMap = {};
+    for (const field of PHOTO_FIELDS) {
+      const state = photoState[field.key];
+      if (!state) {
+        throw new Error(`Please choose a photo for "${field.label}".`);
+      }
+      photoBytesMap[field.key] = await state.croppedBytesPromise;
+    }
+
+    const blob = await renderPptxBlob(textContext, photoBytesMap);
+    const filename = safeFilename(textContext.block_number);
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    statusEl.textContent = 'Report generated — download started.';
+    statusEl.className = 'success';
+  } catch (err) {
+    statusEl.textContent = 'Something went wrong: ' + err.message;
+    statusEl.className = 'error';
+    console.error(err);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Generate & Download Report';
+  }
+});
+</script>
+
+</body>
+</html>
